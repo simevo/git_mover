@@ -6,6 +6,8 @@ import json
 import argparse
 import sys
 
+dry_run = True
+
 
 def check_res(r):
     """Test if a response object is valid"""
@@ -20,13 +22,27 @@ def check_res(r):
     return True
 
 
+def add_personal_access_token(url, credentials):
+    """adds the token as a parameter to the url
+    INPUT: original url
+    OUTPUT: url with security token appended
+    """
+    if '?' in url:
+        return url + "&access_token=" + credentials['token']
+    else:
+        return url + "?access_token=" + credentials['token']
+
+
 def get_req(url, credentials):
     """
     INPUT: an API endpoint for retrieving data
     OUTPUT: the request object containing the retrieved data for successful requests. If a request fails, False is returned.
     """
-    r = requests.get(url=url, auth=(credentials['user_name'], credentials['token']), headers={
-                     'Content-type': 'application/json'})
+    headers = {
+        'Content-type': 'application/json'
+    }
+    print("about to GET from %s" % url)
+    r = requests.get(url=add_personal_access_token(url, credentials), headers=headers)
     return r
 
 
@@ -35,9 +51,17 @@ def post_req(url, data, credentials):
     INPUT: an API endpoint for posting data
     OUTPUT: the request object containing the posted data response for successful requests. If a request fails, False is returned.
     """
-    r = requests.post(url=url, data=data, auth=(credentials['user_name'], credentials['token']), headers={
-                      'Content-type': 'application/json', 'Accept': 'application/vnd.github.v3.html+json'})
-    return r
+    headers = {
+        'Content-type': 'application/json',
+        'Accept': 'application/vnd.github.v3.html+json'
+    }
+    print("about to POST to %s" % url)
+    print("data = ", data)
+    if dry_run:
+        return
+    else:
+        r = requests.post(url=add_personal_access_token(url, credentials), data=data, headers=headers)
+        return r
 
 
 def download_milestones(source_url, source, credentials):
